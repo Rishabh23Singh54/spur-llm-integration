@@ -1,6 +1,6 @@
 type Message = { sender: "user" | "ai"; text: string };
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "spurengineer.netlify.app";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://spurengineer.netlify.app";
 
 export async function fetchHistory(sessionId?: string): Promise<Message[]> {
   if (!sessionId) return [];
@@ -37,5 +37,7 @@ export async function sendMessage(
     reply = await res.text();
   }
 
+  // The backend sends { sessionId, reply } as final JSON?
+  // If not, you may need to parse SSE format
   return { reply, sessionId: sessionId || "new-session" };
 }
