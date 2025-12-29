@@ -1,0 +1,115 @@
+# LLM Chat Support System (Mock + Streaming)
+
+This project is a full-stack AI-style customer support chat system built with:
+
+- **Backend**: Node.js, Express, SQLite, Server-Sent Events (SSE)
+- **Frontend**: Svelte + Vite
+- **LLM Integration**: OpenAI-compatible interface with a mock streaming LLM for free deployments
+
+The system is designed to behave like a real AI assistant while remaining deployable **without paid API keys**.
+
+---
+
+## Architecture Overview
+
+```
+
+Frontend (Svelte)
+↓  (HTTP + SSE)
+Backend (Express)
+↓
+Mock LLM / Real OpenAI (pluggable)
+
+```
+
+---
+
+## Features
+
+- Streaming AI responses (token-by-token)
+- Conversation history persistence
+- Rate limiting
+- Mock LLM for local/dev/free hosting
+- Clean separation between real and mock LLM providers
+- Production-ready structure
+
+---
+
+## Why Mock LLM?
+
+This project supports **real OpenAI integration**, but uses a **policy-driven mock LLM** by default to:
+
+- Avoid paid API dependencies
+- Enable free hosting (Render / Netlify)
+- Preserve identical streaming behavior
+- Allow deterministic testing
+
+Switching to a real LLM only requires setting:
+```
+
+USE_MOCK_LLM=false
+OPENAI_API_KEY=...
+
+````
+
+---
+
+## Local Setup
+
+### Backend
+```bash
+cd backend
+npm install
+npm run dev
+````
+
+Runs on:
+
+```
+http://localhost:3001
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Runs on:
+
+```
+http://localhost:5173
+```
+
+---
+
+## API Endpoints
+
+* `POST /stream` — Stream AI reply (SSE)
+* `GET /history/:id` — Fetch conversation history
+
+---
+
+## Deployment
+
+* **Backend**: Render (free tier)
+* **Frontend**: Netlify (free tier)
+
+No secrets are committed to version control.
+
+---
+
+## Future Improvements
+
+* Replace mock LLM with real OpenAI / HuggingFace
+* Add authentication
+* Improve UI/UX
+* Persistent cloud database
+
+---
+
+## Author
+
+Built as a demonstration of LLM system design, streaming APIs, and production-ready architecture.
