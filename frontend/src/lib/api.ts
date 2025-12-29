@@ -9,9 +9,11 @@ export async function fetchHistory(sessionId?: string): Promise<Message[]> {
   return res.json();
 }
 
+// Send a message and get a streaming mock response
 export async function sendMessage(
   message: string,
-  sessionId?: string
+  sessionId?: string,
+  onToken?: (token: string) => void
 ): Promise<{ reply: string; sessionId: string }> {
   const res = await fetch(`${BASE_URL}/stream`, {
     method: "POST",

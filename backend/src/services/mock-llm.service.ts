@@ -1,53 +1,56 @@
-const POLICIES = {
-  shipping: "We ship worldwide and orders are dispatched within 2 business days.",
-  returns: "We offer a 30-day return window for unused items in original packaging.",
-  refunds: "Refunds are processed within 5–7 business days after inspection.",
-  support: "Our support team is available Monday to Friday, 9am–6pm IST."
-};
+type Message = { sender: "user" | "ai"; text: string };
 
-function generateMockReply(message: string): string {
-  const text = message.toLowerCase();
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
-  if (text.includes("ship") || text.includes("delivery")) {
-    return POLICIES.shipping;
-  }
-
-  if (text.includes("return")) {
-    return POLICIES.returns;
-  }
-
-  if (text.includes("refund")) {
-    return POLICIES.refunds;
-  }
-
-  if (text.includes("support") || text.includes("contact") || text.includes("help")) {
-    return POLICIES.support;
-  }
-
-  if (text.includes("hi") || text.includes("hello")) {
-    return "Hello! How can I help you today?";
-  }
-
-  return (
-    "Thanks for your message. A support agent will be happy to assist you. " +
-    "You can ask about shipping, returns, refunds, or support hours."
-  );
+// Fetch conversation history from backend
+export async function fetchHistory(sessionId?: string): Promise<Message[]> {
+  if (!sessionId) return [];
+  const res = await fetch(`${BASE_URL}/history/${sessionId}`);
+  if (!res.ok) return [];
+  return res.json();
 }
 
-export async function mockStreamReply(
-  history: { sender: "user" | "ai"; text: string }[],
-  onToken: (token: string) => void
-) {
-  const lastUserMessage =
-    [...history].reverse().find(m => m.sender === "user")?.text ?? "";
+// Send message to backend and optionally stream tokens
+export async function sendMessage(
+  message: string,
+  sessionId?: string,
+  onToken?: (token: string) => void
+): Promise<{ reply: string; sessionId: string }> {
+  const res = await fetch(`${BASE_URL}/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, sessionId })
+  });
 
-  const reply = generateMockReply(lastUserMessage);
+  if (!res.ok) throw new Error("Failed to send message");
 
-  // Simulate streaming
-  for (const char of reply) {
-    await new Promise(r => setTimeout(r, 12));
-    onToken(char);
+  const reader = res.body?.getReader();
+  const decoder = new TextDecoder();
+  let reply = "";
+  let newSessionId = sessionId;
+
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      // Parse SSE data lines
+      const lines = chunk.split("\n").filter(Boolean);
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.replace("data: ", "");
+          // 'done' event carries sessionId
+          if (line.startsWith("event: done")) {
+            newSessionId = data;
+          } else {
+            reply += data;
+            onToken?.(data);
+          }
+        }
+      }
+    }
   }
 
-  return reply;
+  return { reply, sessionId: newSessionId || "new-session" };
 }
